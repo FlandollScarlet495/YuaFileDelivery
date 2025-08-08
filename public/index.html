@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>結愛ファイル便</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    input[type="file"], input[type="text"] { margin: 10px 0; padding: 5px; width: 80%; max-width: 300px; }
+    button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+    a { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>🎀 結愛ファイル便 🎀</h1>
+  <form id="uploadForm">
+    <input type="file" name="file" required />
+    <br>
+    <button type="submit">アップロード</button>
+  </form>
+  <p id="result"></p>
+
+  <input type="text" id="deleteKey" placeholder="削除キーを入力してください" />
+  <br>
+  <button id="deleteBtn">アップロードしたファイルを削除する</button>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const result = document.getElementById("result");
+    let lastUploadedId = null;
+    let lastDeleteKey = null;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      result.textContent = "アップロード中…⏳";
+      try {
+        const res = await fetch("/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        lastUploadedId = data.id;
+        lastDeleteKey = data.deleteKey;
+        result.innerHTML = 
+          "アップロード完了！<br>ダウンロードURL: <a href='/f/" + data.id + "' target='_blank'>/f/" + data.id + "</a><br>" +
+          "削除キー: <code>" + data.deleteKey + "</code><br>" +
+          "削除キーをコピーして安全に保管してください。";
+        document.getElementById("deleteKey").value = data.deleteKey;
+      } catch (e) {
+        result.textContent = "アップロード失敗しました。";
+      }
+    });
+
+    document.getElementById("deleteBtn").addEventListener("click", async () => {
+      const key = document.getElementById("deleteKey").value.trim();
+      if (!lastUploadedId) {
+        alert("まだファイルをアップロードしていません。");
+        return;
+      }
+      if (!key) {
+        alert("削除キーを入力してください。");
+        return;
+      }
+      try {
+        const res = await fetch("/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: lastUploadedId, key }),
+        });
+        if (res.ok) {
+          alert("ファイルを削除しました！");
+          result.textContent = "";
+          lastUploadedId = null;
+          lastDeleteKey = null;
+          document.getElementById("deleteKey").value = "";
+        } else {
+          alert("削除に失敗しました。削除キーを確認してください。");
+        }
+      } catch (e) {
+        alert("通信エラーが発生しました。");
+      }
+    });
+  </script>
+</body>
+</html>
