@@ -71,3 +71,8 @@ node_modules/
 
 # VSCode settings
 .vscode/
+
+# Yua Folder
+uploads/
+storage/
+data/filelist.json
